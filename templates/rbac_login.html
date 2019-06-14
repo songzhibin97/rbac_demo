@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CH">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>rabc_login</title>
+    {#引入bootstrap样式css文件#}
+    <link rel="stylesheet" href="/static/bootstrap-3.3.7-dist/css/bootstrap.min.css">
+</head>
+<body>
+{#csrf 用于后续ajax提交数据#}
+{% csrf_token %}
+<div class="container">
+    <div class="row">
+        <h1 class="col-sm-4 col-md-offset-5">注 &nbsp&nbsp&nbsp 测</h1>
+    </div>
+    {% for log in login_obj %}
+        <div class="form-group col-sm-4 col-sm-offset-4 {% if log.errors.0 %}has-error{% endif %}">
+            <label for="{{ log.id_for_label }}">{{ log.label }}</label>
+            {{ log }}
+            <span class="text-danger">{{ log.errors.0 }}</span>
+        </div>
+    {% endfor %}
+    <div class="form-group col-sm-3 col-sm-offset-4">
+        <input type="submit" id="login" class="btn btn-default" value="注册">
+    </div>
+    <div class="col-sm-2 ">
+        <a href="/enter/" class="btn btn-default">登录</a>
+    </div>
+</div>
+{#引入jQuery js文件#}
+<script src="/static/jquery-3.3.1.js"></script>
+{#引入bootstrap样式js文件#}
+<script src="/static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script>
+    {#按提交按钮后出发事件#}
+    $("#login").on('click', function () {
+        {#ajax发送数据请求#}
+        $.ajax({
+            url: '/login/',
+            type: 'post',
+            dataType: 'json',
+            data: {
+                {#发送数据分别为 用于post请求csrf键值对 分别取输入框的username password password2输入框的值#}
+                'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val(),
+                'username': $("#id_username").val(),
+                'password': $("#id_password").val(),
+                'password2': $("#id_password2").val()
+            },
+            success: function (data) {
+                {#ajax提交成功后，后端返回的信息data#}
+                {#后端的状态信息 dat.mode === 1 为注册成功 dat.mode === 0 为注册失败 dat.mode === 2 为 form组件验证未通过 #}
+                var dat = data;
+                if (dat.mode === 1) {
+                    alert("注册成功");
+                    {#注册成功 返回到登录界面#}
+                    location.href = '/enter/'
+                } else if (dat.mode === 0) {
+                    {#注册失败 将三个输入框的父标签添加has-error属性#}
+                    $("#id_username,#id_password,#id_password2").parent().addClass("has-error");
+                    {#创建div标签#}
+                    var $d1 = document.createElement("span");
+                    {#将错误信息放入div中 dat.data#}
+                    $($d1).text(dat.data);
+                    {#给创建的d1增加class属性内容#}
+                    $($d1).attr("class", 'text-danger');
+                    {#将d1放到 id为 id_password2后面#}
+                    $($d1).insertAfter($("#id_password2"))
+                } else if (dat.mode === 2) {
+                    {#验证失败 将三个输入框的父标签添加has-error属性#}
+                    $("#id_username,#id_password,#id_password2").parent().addClass("has-error");
+                    {#each循环取出errors内容 放入span标签中#}
+                    $.each(dat.errors, function (k, v) {
+                        $("#id_" + k).next("span").text(v[0])
+                    })
+                }
+            }
+        })
+    });
+    {#input标签获得焦点样式时清空span标签的内容和清除has-error的样式#}
+    $("input").on("focus", function () {
+        $("#id_username,#id_password,#id_password2").next("span").text("");
+        $("#id_username,#id_password,#id_password2").parent().removeClass('has-error')
+    });
+    {#新增提交触发按钮事件清空error信息#}
+    $("#login").on('click', function () {
+        $("#id_username,#id_password,#id_password2").next("span").text("");
+        $("#id_username,#id_password,#id_password2").parent().removeClass('has-error')
+    })
+</script>
+</body>
+</html>
